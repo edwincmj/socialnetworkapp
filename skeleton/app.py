@@ -118,6 +118,10 @@ def unauthorized_handler():
 def register():
 	return render_template('register.html', supress='True')
 
+@app.route("/register/error", methods=['GET'])
+def registererror():
+	return render_template('register.html')
+
 @app.route("/register", methods=['POST'])
 def register_user():
 	try:
@@ -138,7 +142,7 @@ def register_user():
 		return render_template('hello.html', name=email, message='Account Created!')
 	else:
 		print("couldn't find all tokens")
-		return flask.redirect(flask.url_for('register'))
+		return flask.redirect(flask.url_for('registererror'))
 
 def getUsersPhotos(uid):
 	cursor = conn.cursor()
