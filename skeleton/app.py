@@ -118,6 +118,10 @@ def unauthorized_handler():
 def register():
 	return render_template('register.html', supress='True')
 
+@app.route("/register/error", methods=['GET'])
+def registererror():
+	return render_template('register.html')
+
 @app.route("/register", methods=['POST'])
 def register_user():
 	try:
@@ -138,11 +142,25 @@ def register_user():
 		return render_template('hello.html', name=email, message='Account Created!')
 	else:
 		print("couldn't find all tokens")
-		return flask.redirect(flask.url_for('register'))
+		return flask.redirect(flask.url_for('registererror'))
 
-def getUsersPhotos(uid):
+def getUsersPhotos(email):
 	cursor = conn.cursor()
-	cursor.execute("SELECT imgdata, picture_id, caption FROM Pictures WHERE user_id = '{0}'".format(uid))
+	cursor.execute("""
+	SELECT 
+		data, photo_id, caption, u.user_id
+	FROM
+		users u,
+		photos p
+	WHERE
+		u.user_id = p.user_id
+			AND u.email = '{0}'
+	""".format(email))
+	return cursor.fetchall() #NOTE list of tuples, [(imgdata, pid), ...]
+
+def getAllPhotos():
+	cursor = conn.cursor()
+	cursor.execute("SELECT data, photo_id, caption FROM photos")
 	return cursor.fetchall() #NOTE list of tuples, [(imgdata, pid), ...]
 
 def getUserIdFromEmail(email):
@@ -163,7 +181,9 @@ def isEmailUnique(email):
 @app.route('/profile')
 @flask_login.login_required
 def protected():
-	return render_template('hello.html', name=flask_login.current_user.id, message="Here's your profile")
+	print(flask_login.current_user.id)
+	user_photos = getUsersPhotos(flask_login.current_user.id)
+	return render_template('hello.html', name=flask_login.current_user.id, message="Here's your profile", photos=user_photos,base64=base64)
 
 #begin photo uploading code
 # photos uploaded using base64 encoding so they can be directly embeded in HTML
@@ -180,7 +200,7 @@ def upload_file():
 		caption = request.form.get('caption')
 		photo_data =imgfile.read()
 		cursor = conn.cursor()
-		cursor.execute('''INSERT INTO Pictures (imgdata, user_id, caption) VALUES (%s, %s, %s )''' ,(photo_data,uid, caption))
+		cursor.execute('''INSERT INTO photos (data, user_id, caption, albums_id) VALUES (%s, %s, %s, %s)''' ,(photo_data,uid, caption,1))
 		conn.commit()
 		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(uid),base64=base64)
 	#The method is GET so we return a  HTML form to upload the a photo.
@@ -189,10 +209,20 @@ def upload_file():
 #end photo uploading code
 
 
+@app.route("/deletePhoto", methods=['POST'])
+@flask_login.login_required
+def deletePhoto():
+	photoid = request.args.get('photo_id')
+	cursor = conn.cursor()
+	cursor.execute("DELETE FROM photos WHERE photo_id = {0};".format(photoid))
+	user_photos = getUsersPhotos(flask_login.current_user.id)
+	return render_template('hello.html', name=flask_login.current_user.id, message="Here's your profile", photos=user_photos,base64=base64)
+
 #default page
 @app.route("/", methods=['GET'])
 def hello():
-	return render_template('hello.html', message='Welecome to Photoshare')
+	all_photos = getAllPhotos()
+	return render_template('hello.html', message='Welcome to Photoshare', photos=all_photos,base64=base64)
 
 
 if __name__ == "__main__":
