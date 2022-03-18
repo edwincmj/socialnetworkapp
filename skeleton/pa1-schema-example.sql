@@ -82,3 +82,6 @@ CREATE TABLE Likes(
  FOREIGN KEY (user_id)
  REFERENCES Users (user_id)
 );
+
+INSERT INTO users(user_id,email,first_name,last_name,password) VALUES (1,'testing@gmail.com','John','Smith','password');
+INSERT INTO Albums(user_id,albums_id) VALUES (1,1);
