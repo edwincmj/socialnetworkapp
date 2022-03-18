@@ -1,0 +1,26 @@
+<!doctype html>
+<body>
+<h4>Search friends</h4>
+<form method="post" enctype="multipart/form-data" action="/search">
+    <label for="friend">Search friend:</label>
+    <input type="text" name="friend_ser" required='true' /><br />
+    <input type="submit" value="Search" />
+</form>
+
+{% for item in findFriendData %}
+    <tr>
+        <td> {{findFriendData[0][0]}} {{findFriendData[0][1]}} 
+            <form method="post" enctype="multipart/form-data" action="/friend"> 
+                <input type="hidden" name="first" value={{findFriendData[0][0]}}>
+                <input type="hidden" name="last" value={{findFriendData[0][1]}}>
+                <input type="submit" value="Add"> 
+            </form></td> 
+        </br>
+    </tr>
+{% endfor %}
+
+<div>
+    <p> Go to <a href='/profile'>profile?</a></p>
+</div>
+
+</body>

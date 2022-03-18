@@ -168,6 +168,11 @@ def getUserIdFromEmail(email):
 	cursor.execute("SELECT user_id  FROM Users WHERE email = '{0}'".format(email))
 	return cursor.fetchone()[0]
 
+def getUsersFriends(uid):
+	cursor = conn.cursor()
+	cursor.execute("SELECT U.first_name, U.last_name FROM Users as U, Friends as F WHERE U.user_id = (SELECT F.user_id2 WHERE F.user_id1 = '{0}')".format(uid))
+	return cursor.fetchall()
+
 def isEmailUnique(email):
 	#use this to check if a email has already been registered
 	cursor = conn.cursor()
@@ -207,6 +212,38 @@ def upload_file():
 	else:
 		return render_template('upload.html')
 #end photo uploading code
+
+
+@app.route('/search', methods=['GET', 'POST'])
+@flask_login.login_required
+def search():
+    if request.method == "POST":
+        friendvar = request.form['friend_ser']
+        friendvar = friendvar.split(" ", 1)
+        cursor.execute("SELECT U.first_name, U.last_name, U.email FROM Users as U WHERE U.first_name LIKE %s OR U.last_name LIKE %s", (friendvar[0], friendvar[0]))
+        conn.commit()
+        data = cursor.fetchall()
+        # all in the search box will return all the tuples
+        #if len(data) == 0 and book == 'all': 
+        #    cursor.execute("SELECT name, author from Book")
+        #    conn.commit()
+        #    data = cursor.fetchall()
+        #return render_template('hello.html', data=findFriends)
+        return render_template('search.html', findFriendData = data)
+    return render_template('search.html')
+
+@app.route('/friend', methods=['POST'])
+@flask_login.login_required
+def friend():
+	uid = getUserIdFromEmail(flask_login.current_user.id)
+	name_last = request.form.get('last')
+	name_first = request.form.get('last')
+	#cursor.execute("SELECT U.first_name, U.last_name, U.email FROM Users as U WHERE U.first_name LIKE %s OR U.last_name LIKE %s", (friendvar[0], friendvar[0]))
+    #conn.commit()
+
+	print("test: %s \n",name_last)
+	print(name_last)
+	return render_template('hello.html', name=flask_login.current_user.id, message="Friend Added", friends=getUsersFriends(uid))
 
 
 @app.route("/deletePhoto", methods=['POST'])
