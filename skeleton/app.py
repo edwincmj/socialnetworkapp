@@ -23,7 +23,7 @@ app.secret_key = 'super secret string'  # Change this!
 
 #These will need to be changed according to your creditionals
 app.config['MYSQL_DATABASE_USER'] = 'root'
-app.config['MYSQL_DATABASE_PASSWORD'] = 'root'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'cs460cs460'
 app.config['MYSQL_DATABASE_DB'] = 'photoshare'
 app.config['MYSQL_DATABASE_HOST'] = 'localhost'
 mysql.init_app(app)
@@ -219,16 +219,16 @@ def upload_file():
 def search():
     if request.method == "POST":
         friendvar = request.form['friend_ser']
-        friendvar = friendvar.split(" ", 1)
-        cursor.execute("SELECT U.first_name, U.last_name, U.email FROM Users as U WHERE U.first_name LIKE %s OR U.last_name LIKE %s", (friendvar[0], friendvar[0]))
-        conn.commit()
+        friendvar = friendvar.split(" ")
+        
+        cursor.execute("SELECT U.first_name, U.last_name, U.user_id FROM Users as U WHERE U.first_name LIKE %s OR U.last_name LIKE %s", (friendvar[0], friendvar[0]))
         data = cursor.fetchall()
-        # all in the search box will return all the tuples
-        #if len(data) == 0 and book == 'all': 
-        #    cursor.execute("SELECT name, author from Book")
-        #    conn.commit()
-        #    data = cursor.fetchall()
-        #return render_template('hello.html', data=findFriends)
+        if(len(friendvar) > 1):
+        	cursor.execute("SELECT U.first_name, U.last_name, U.user_id FROM Users as U WHERE U.last_name LIKE %s", friendvar[1])
+        	data = data + cursor.fetchall()
+        	print(data)
+
+        conn.commit()
         return render_template('search.html', findFriendData = data)
     return render_template('search.html')
 
@@ -236,13 +236,16 @@ def search():
 @flask_login.login_required
 def friend():
 	uid = getUserIdFromEmail(flask_login.current_user.id)
-	name_last = request.form.get('last')
-	name_first = request.form.get('last')
-	#cursor.execute("SELECT U.first_name, U.last_name, U.email FROM Users as U WHERE U.first_name LIKE %s OR U.last_name LIKE %s", (friendvar[0], friendvar[0]))
-    #conn.commit()
-
-	print("test: %s \n",name_last)
-	print(name_last)
+	friend_uid = request.form.get('fuid')
+	print(friend_uid)
+	cursor = conn.cursor()
+	
+	if (cursor.execute("SELECT user_id1  FROM Friends WHERE user_id1 = '{0}' AND user_id2 = '{1}'".format(uid, friend_uid))):
+		return render_template('search.html')
+	cursor.execute("INSERT INTO Friends (user_id1, user_id2) VALUES ('{0}', '{1}')".format(uid, friend_uid))
+	conn.commit()
+	cursor.execute("INSERT INTO Friends (user_id1, user_id2) VALUES ('{0}', '{1}')".format(friend_uid, uid))
+	conn.commit()
 	return render_template('hello.html', name=flask_login.current_user.id, message="Friend Added", friends=getUsersFriends(uid))
 
 

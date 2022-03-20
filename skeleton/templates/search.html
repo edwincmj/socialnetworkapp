@@ -9,10 +9,10 @@
 
 {% for item in findFriendData %}
     <tr>
-        <td> {{findFriendData[0][0]}} {{findFriendData[0][1]}} 
+        <td> {{item[0]}} {{item[1]}}
             <form method="post" enctype="multipart/form-data" action="/friend"> 
-                <input type="hidden" name="first" value={{findFriendData[0][0]}}>
-                <input type="hidden" name="last" value={{findFriendData[0][1]}}>
+                <input type="hidden" name="first" value={{item[0]}}>
+                <input type="hidden" name="fuid" value={{item[2]}}>
                 <input type="submit" value="Add"> 
             </form></td> 
         </br>
