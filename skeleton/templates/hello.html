@@ -49,6 +49,24 @@
 
 
     <li>{{photo[2]}}
+
+      {% if tags %}
+      <ul>
+        {% for tag in tags %}
+          {% if tag[2] == photo[1] %}
+          <li>
+            {{tag[2]}}
+            {{photo[1]}}
+            <form method="post" enctype="multipart/form-data" action="/getPhotosByTagName"> 
+              <input type="hidden" name="tagname" value="{{tag[1]}}">
+              <input type="submit" value="{{tag[1]}}">
+            </form>
+          </li>
+          {% endif %}
+        {%endfor%}
+      </ul>
+      {% endif %}
+
       {% if name %}
       <button type="button" onclick=" {{ url_for('deletePhoto', photoid=photo[1] ) }} ">Delete Photo</button>
 
@@ -111,6 +129,15 @@
     </li>
     {% endfor %}
   </ul>
+  {% endif %}
+
+
+  {% if tagphotos %}
+    {% for tagphoto in tagphotos %}
+      <li>{{tagphoto[1]}}
+        <img src='data:image/jpg;base64, {{ base64.b64encode(tagphoto[0]).decode("ascii") }}' />
+      </li>
+    {%endfor%}
   {% endif %}
 
   {% if message is none %}

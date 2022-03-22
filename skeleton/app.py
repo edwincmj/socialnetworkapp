@@ -26,7 +26,7 @@ app.secret_key = 'super secret string'  # Change this!
 
 #These will need to be changed according to your creditionals
 app.config['MYSQL_DATABASE_USER'] = 'root'
-app.config['MYSQL_DATABASE_PASSWORD'] = 'cs460cs460'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'root'
 app.config['MYSQL_DATABASE_DB'] = 'photoshare'
 app.config['MYSQL_DATABASE_HOST'] = 'localhost'
 mysql.init_app(app)
@@ -164,7 +164,13 @@ def getUsersPhotos(email):
 def getTagnames():
 	cursor = conn.cursor()
 	cursor.execute("""
-	SELECT name from tags
+	SELECT 
+    *
+	FROM
+		tags t,
+		tagged tg
+	WHERE
+		t.tag_id = tg.tag_id;
 	""")
 	return cursor.fetchall() #NOTE list of tuples, [(imgdata, pid), ...]
 
@@ -207,9 +213,10 @@ def isEmailUnique(email):
 @flask_login.login_required
 def protected():
 	#print(flask_login.current_user.id)
+	tags = getTagnames()
 	user_photos = getUsersPhotos(flask_login.current_user.id)
 	photoids = [lis[1] for lis in user_photos]
-	return render_template('hello.html', name=flask_login.current_user.id, message="Here's your profile", photos=user_photos, comments=getComment(photoids), photoLikes=getLikes(photoids),topUsers=topUsers() ,base64=base64)
+	return render_template('hello.html', name=flask_login.current_user.id, message="Here's your profile", photos=user_photos, comments=getComment(photoids), tags=tags, photoLikes=getLikes(photoids),topUsers=topUsers() ,base64=base64)
 
 #begin photo uploading code
 # photos uploaded using base64 encoding so they can be directly embeded in HTML
@@ -295,6 +302,8 @@ def addtag():
 		INSERT INTO tags (name)
 		VALUES ('{0}');
 		""".format(tag))
+		conn.commit()
+		print(cursor.fetchall())
 	cursor.execute("""
 	SELECT 
 		tag_id
@@ -308,6 +317,8 @@ def addtag():
 	cursor.execute("""
 	insert into tagged VALUES ({0},{1});
 	""".format(photo,tag_id))	
+	conn.commit()
+	print(cursor.fetchall())
 	return render_template('hello.html')
 
 @app.route('/getUserPhotosByTagName')
@@ -336,14 +347,14 @@ def getUserPhotosByTagName():
 	""".format(tagname,email))	
 	return cursor.fetchall()
 
-@app.route('/getPhotosByTagName')
+@app.route('/getPhotosByTagName', methods=['POST'])
 @flask_login.login_required
 def getPhotosByTagName():
-	tagname = request.args.get('tagname')
+	tagname = request.form.get('tagname')
 	cursor = conn.cursor()
 	cursor.execute("""
 	SELECT 
-		*
+		p.data,p.caption
 	FROM
 		photos p,
 		tagged tg,
@@ -353,7 +364,9 @@ def getPhotosByTagName():
 			AND tg.tag_id = t.tag_id
 			AND t.name = '{0}'
 	""".format(tagname))	
-	return cursor.fetchall()
+	tagphotos = cursor.fetchall()
+	return render_template('hello.html', message='Photos with '+tagname, tagphotos=tagphotos, base64=base64)
+
 
 @app.route('/mostpopulartags')
 @flask_login.login_required
@@ -529,7 +542,7 @@ def recommendFriends(uid):
 def hello():
 	all_photos = getAllPhotos()
 	photoids = [lis[1] for lis in all_photos]
-	return render_template('hello.html', message='Welcome to Photoshare', photos=all_photos, comments=getComment(photoids), photoLikes=getLikes(photoids), base64=base64, topUsers = topUsers())
+	return render_template('hello.html', message='Welcome to Photoshare', photos=all_photos, comments=getComment(photoids), tags=getTagnames(), photoLikes=getLikes(photoids), base64=base64, topUsers = topUsers())
 
 
 if __name__ == "__main__":
