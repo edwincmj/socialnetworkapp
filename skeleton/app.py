@@ -307,15 +307,37 @@ def getComment(pid):
 	cursor = conn.cursor()
 	C = []
 	for ind_pid in pid:
-		cursor.execute("SELECT C.text, C.date, C.comment_id, C.user_id FROM Comments C WHERE C.photo_id = '{0}'".format(ind_pid))
+		cursor.execute("SELECT C.text, C.date, C.comment_id, C.user_id, U.first_name, U.last_name FROM Comments C inner join Users U on C.user_id = U.user_id WHERE C.photo_id = '{0}'".format(ind_pid))
 		data = []
 		data = cursor.fetchall()
 		C.append(data)
 	#print(C)
 	return C
 
-	#return C
 
+@app.route("/searchComment", methods=['POST', 'GET'])
+def searchComment():
+	if request.method == 'POST':
+		#pid = request.form.get('photo_id')
+		#print(pid)
+		#pid = int(pid)
+		text = request.form.get('comment_text_search')
+		#date = datetime.date.today()
+		#uid = getUserIdFromEmail(flask_login.current_user.id)
+		#cid = genCommentIdFromPhoto(pid)
+		#photo_user = getUserIdFromPhoto(pid)
+
+		#if photo_user is uid:
+		#	return flask.redirect(flask.url_for('hello'))
+
+		print(text)
+		data = []
+		cursor.execute("SELECT C.text, U.first_name, U.last_name, COUNT(C.text) FROM Comments C, Users U WHERE C.user_id = U.user_id and C.text LIKE %s Group By U.user_id ORDER BY COUNT(*) DESC", text)
+		conn.commit()
+		data.append(cursor.fetchall())
+		print(data)
+		return render_template('search.html', searchComments = data)
+	return flask.redirect(flask.url_for('search.html'))
 
 
 
@@ -355,9 +377,9 @@ def getLikes(pid):
 		data_names = [item for item in cursor.fetchall()]
 		#print(data_test)
 		data.append(data_names)
-		print(data)
+		#print(data)
 		C.append(data)
-	print(C)
+	#print(C)
 	return C
 
 def getUserIdFromComment(cid):
@@ -368,7 +390,7 @@ def getUserIdFromComment(cid):
 #Popular users
 def topUsers():
 	cursor = conn.cursor()
-	cursor.execute("SELECT NU.first_name, NU.last_name , SUM(T.num_photos) FROM Users NU , (SELECT U.user_id, COUNT(P.photo_id) AS num_photos FROM Users U, Photos P WHERE P.user_id = U.user_id GROUP BY U.user_id UNION (SELECT U.user_id, COUNT(C.comment_id) AS num_photos FROM Users U, Comments C WHERE C.user_id = U.user_id GROUP BY U.user_id)) AS T WHERE T.user_id = NU.user_id GROUP BY T.user_id ORDER BY SUM(T.num_photos) DESC")
+	cursor.execute("SELECT NU.first_name, NU.last_name , SUM(T.num_photos) FROM Users NU , (SELECT U.user_id, COUNT(P.photo_id) AS num_photos FROM Users U, Photos P WHERE P.user_id = U.user_id GROUP BY U.user_id UNION (SELECT U.user_id, COUNT(C.comment_id) AS num_photos FROM Users U, Comments C WHERE C.user_id = U.user_id GROUP BY U.user_id)) AS T WHERE T.user_id = NU.user_id GROUP BY T.user_id ORDER BY SUM(T.num_photos) DESC LIMIT 10")
 	#print(cursor.fetchall())
 	data = cursor.fetchall()
 

@@ -19,6 +19,21 @@
     </tr>
 {% endfor %}
 
+<br>
+<h4>Search Comments</h4>
+<form method="post" enctype="multipart/form-data" action="/searchComment">
+    <label for="Comment">Search Comments:</label>
+    <input type="text" name="comment_text_search" required='true' /><br />
+    <input type="submit" value="Search" />
+</form>
+
+{% for item in searchComments %}
+    <tr>
+        <td> {{item[loop.index0][0]}} {{item[loop.index0][1]}} {{item[loop.index0][2]}} {{item[loop.index0][3]}}</td> 
+        </br>
+    </tr>
+{% endfor %}
+
 <div>
     <p> Go to <a href='/profile'>profile?</a></p>
 </div>

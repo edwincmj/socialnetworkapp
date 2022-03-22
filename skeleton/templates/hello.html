@@ -54,7 +54,7 @@
 
         {% if comments %}
           {% for comment in comments[loop.index0]%}
-            <li>{{comment[0]}}</li>
+            <li>{{comment[0]}} by {{comment[4]}} {{comment[5]}}</li>
           {%endfor%}
         {% endif %}
 
