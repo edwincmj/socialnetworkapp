@@ -154,6 +154,20 @@
     {%endfor%}
   {% endif %}
 
+  {% if populartags  %}
+  <h3>Most Popular Tags</h3>
+    <ol>
+      {% for populartag in populartags %}
+        <li>
+          <form method="post" enctype="multipart/form-data" action="/getPhotosByTagName"> 
+            <input type="hidden" name="tagname" value="{{populartag[1]}}">
+            <input type="submit" value="{{populartag[1]}}">
+          </form>
+        </li>
+      {% endfor %}
+    </ol>
+  {% endif %}
+
   {% if message is none %}
   <p>You should <a href='/login'>login!</a></p>
   {% else %}

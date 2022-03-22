@@ -26,7 +26,7 @@ app.secret_key = 'super secret string'  # Change this!
 
 #These will need to be changed according to your creditionals
 app.config['MYSQL_DATABASE_USER'] = 'root'
-app.config['MYSQL_DATABASE_PASSWORD'] = 'cs460cs460'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'root'
 app.config['MYSQL_DATABASE_DB'] = 'photoshare'
 app.config['MYSQL_DATABASE_HOST'] = 'localhost'
 mysql.init_app(app)
@@ -173,6 +173,21 @@ def getTagnames():
 		t.tag_id = tg.tag_id;
 	""")
 	return cursor.fetchall() #NOTE list of tuples, [(imgdata, pid), ...]
+
+def mostpopulartags():
+	cursor = conn.cursor()
+	cursor.execute("""
+	SELECT 
+		*
+	FROM
+		tags t,
+		tagged tg
+	WHERE
+		t.tag_id = tg.tag_id
+	GROUP BY tg.tag_id
+	ORDER BY COUNT(*) DESC
+	""")	
+	return cursor.fetchall()
 
 def getAllPhotos():
 	cursor = conn.cursor()
@@ -326,7 +341,6 @@ def deletePhoto():
 
 
 @app.route('/addtag',methods=['POST'])
-@flask_login.login_required
 def addtag():
 	cursor = conn.cursor()
 	tag = request.form.get('tag')
@@ -405,23 +419,6 @@ def getPhotosByTagName():
 	tagphotos = cursor.fetchall()
 	return render_template('hello.html', message='Photos with '+tagname, tagphotos=tagphotos, base64=base64)
 
-
-@app.route('/mostpopulartags')
-@flask_login.login_required
-def mostpopulartags():
-	cursor = conn.cursor()
-	cursor.execute("""
-	SELECT 
-		*
-	FROM
-		tags t,
-		tagged tg
-	WHERE
-		t.tag_id = tg.tag_id
-	GROUP BY tg.tag_id
-	ORDER BY COUNT(*) DESC
-	""")	
-	return cursor.fetchall()
 
 @app.route('/photosearch', methods=['POST'])
 @flask_login.login_required
@@ -579,8 +576,9 @@ def recommendFriends(uid):
 @app.route("/", methods=['GET'])
 def hello():
 	all_photos = getAllPhotos()
+	populartags = mostpopulartags()
 	photoids = [lis[1] for lis in all_photos]
-	return render_template('hello.html', message='Welcome to Photoshare', photos=all_photos, comments=getComment(photoids), tags=getTagnames(), photoLikes=getLikes(photoids), base64=base64, topUsers = topUsers())
+	return render_template('hello.html', message='Welcome to Photoshare', populartags=populartags,photos=all_photos, comments=getComment(photoids), tags=getTagnames(), photoLikes=getLikes(photoids), base64=base64, topUsers = topUsers())
 
 
 if __name__ == "__main__":
