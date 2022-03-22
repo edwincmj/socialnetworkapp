@@ -161,6 +161,13 @@ def getUsersPhotos(email):
 	""".format(email))
 	return cursor.fetchall() #NOTE list of tuples, [(imgdata, pid), ...]
 
+def getTagnames():
+	cursor = conn.cursor()
+	cursor.execute("""
+	SELECT name from tags
+	""")
+	return cursor.fetchall() #NOTE list of tuples, [(imgdata, pid), ...]
+
 def getAllPhotos():
 	cursor = conn.cursor()
 	cursor.execute("SELECT data, photo_id, caption FROM photos")
@@ -270,6 +277,123 @@ def deletePhoto():
 	cursor.execute("DELETE FROM photos WHERE photo_id = {0};".format(photoid))
 	user_photos = getUsersPhotos(flask_login.current_user.id)
 	return render_template('hello.html', name=flask_login.current_user.id, message="Here's your profile", photos=user_photos,base64=base64)
+
+
+@app.route('/addtag',methods=['POST'])
+@flask_login.login_required
+def addtag():
+	cursor = conn.cursor()
+	tag = request.form.get('tag')
+	photo = request.form.get('photo')
+	print("tag ",tag)
+	print("photo ",photo)
+	all_tags = getTagnames()
+	if (tag) not in all_tags:
+		print("yes")
+		cursor.execute("""
+		INSERT INTO tags (name)
+		VALUES ('{0}');
+		""".format(tag))
+	cursor.execute("""
+	SELECT 
+		tag_id
+	FROM
+		tags
+	WHERE
+		name = '{0}';
+	""".format(tag))
+	tag_id=cursor.fetchall()[0][0]
+	print("tag_id ",tag_id)
+	cursor.execute("""
+	insert into tagged VALUES ({0},{1});
+	""".format(photo,tag_id))	
+	return render_template('hello.html')
+
+@app.route('/getUserPhotosByTagName')
+@flask_login.login_required
+def getUserPhotosByTagName():
+	tagname = request.args.get('tagname')
+	email = flask_login.current_user.id
+	cursor = conn.cursor()
+	cursor.execute("""
+	SELECT 
+		*
+	FROM
+		photos p,
+		tagged tg,
+		tags t
+	WHERE
+		p.photo_id = tg.photo_id
+			AND tg.tag_id = t.tag_id
+			AND t.name = '{0}'
+			AND user_id = (SELECT 
+				user_id
+			FROM
+				users
+			WHERE
+				email = '{1}')
+	""".format(tagname,email))	
+	return cursor.fetchall()
+
+@app.route('/getPhotosByTagName')
+@flask_login.login_required
+def getPhotosByTagName():
+	tagname = request.args.get('tagname')
+	cursor = conn.cursor()
+	cursor.execute("""
+	SELECT 
+		*
+	FROM
+		photos p,
+		tagged tg,
+		tags t
+	WHERE
+		p.photo_id = tg.photo_id
+			AND tg.tag_id = t.tag_id
+			AND t.name = '{0}'
+	""".format(tagname))	
+	return cursor.fetchall()
+
+@app.route('/mostpopulartags')
+@flask_login.login_required
+def mostpopulartags():
+	cursor = conn.cursor()
+	cursor.execute("""
+	SELECT 
+		*
+	FROM
+		tags t,
+		tagged tg
+	WHERE
+		t.tag_id = tg.tag_id
+	GROUP BY tg.tag_id
+	ORDER BY COUNT(*) DESC
+	""")	
+	return cursor.fetchall()
+
+@app.route('/photosearch', methods=['POST'])
+@flask_login.login_required
+def photoSearch():
+	cursor = conn.cursor()
+	tags = request.form.get('tags').split(' ')
+	query = """
+	SELECT 
+    	p.photo_id, p.caption, p.data
+	FROM
+		photos p,
+		tagged tg,
+		tags t
+	WHERE
+		p.photo_id = tg.photo_id
+			AND tg.tag_id = t.tag_id
+			AND (t.name='{0}'
+	""".format(tags[0])
+	for i in range(1,len(tags)):
+		query += "OR t.name='"+tags[i]+"' "
+	query+=');'
+	print(query)
+	cursor.execute(query)
+	return cursor.fetchall()
 
 
 #Comments
