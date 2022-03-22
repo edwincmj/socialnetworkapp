@@ -213,10 +213,11 @@ def isEmailUnique(email):
 @flask_login.login_required
 def protected():
 	#print(flask_login.current_user.id)
+	uid = getUserIdFromEmail(flask_login.current_user.id)
 	tags = getTagnames()
 	user_photos = getUsersPhotos(flask_login.current_user.id)
 	photoids = [lis[1] for lis in user_photos]
-	return render_template('hello.html', name=flask_login.current_user.id, message="Here's your profile", photos=user_photos, comments=getComment(photoids), tags=tags, photoLikes=getLikes(photoids),topUsers=topUsers() ,base64=base64)
+	return render_template('hello.html', name=flask_login.current_user.id, message="Here's your profile", photos=user_photos, comments=getComment(photoids), tags=tags, photoLikes=getLikes(photoids),topUsers=topUsers(), friends=getUsersFriends(uid), Albums=getAlbumid(uid) ,base64=base64)
 
 #begin photo uploading code
 # photos uploaded using base64 encoding so they can be directly embeded in HTML
@@ -231,15 +232,52 @@ def upload_file():
 		uid = getUserIdFromEmail(flask_login.current_user.id)
 		imgfile = request.files['photo']
 		caption = request.form.get('caption')
+		album_name = request.form.get('album')
 		photo_data =imgfile.read()
 		cursor = conn.cursor()
-		cursor.execute('''INSERT INTO photos (data, user_id, caption, albums_id) VALUES (%s, %s, %s, %s)''' ,(photo_data,uid, caption,1))
+		if cursor.execute("SELECT A.albums_id FROM Albums A WHERE A.user_id = '{0}' and A.name = '{1}'".format(uid, album_name)):
+			album_id = cursor.fetchall()
+			print(album_id)
+			cursor.execute('''INSERT INTO photos (data, user_id, caption, albums_id) VALUES (%s, %s, %s, %s)''' ,(photo_data,uid, caption,album_id))
+		else:
+			cursor.execute("INSERT INTO Albums (name, date, user_id) VALUES (%s, %s, %s)", (album_name, datetime.date.today(), uid))
+			conn.commit()
+			cursor.execute("SELECT A.albums_id FROM Albums A WHERE A.user_id = '{0}' and A.name = '{1}'".format(uid, album_name))
+			album_id = cursor.fetchall()
+			print(album_id)
+			cursor.execute('''INSERT INTO photos (data, user_id, caption, albums_id) VALUES (%s, %s, %s, %s)''' ,(photo_data,uid, caption,album_id))
+
 		conn.commit()
 		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(uid),base64=base64)
 	#The method is GET so we return a  HTML form to upload the a photo.
 	else:
 		return render_template('upload.html')
 #end photo uploading code
+
+#Delete Album
+@app.route('/deleteAlbum', methods=['GET', 'POST'])
+@flask_login.login_required
+def deleteAlbum():
+	if request.method == 'POST':
+		uid = getUserIdFromEmail(flask_login.current_user.id)
+		album_name = request.form.get('album')
+		album_id = request.form.get('albumid')
+		cursor = conn.cursor()
+		#cursor.execute("SELECT photo_id FROM photos WHERE albums_id = {0};".format(album_id))
+		print(album_id)
+		cursor.execute("DELETE FROM albums WHERE albums_id = {0}".format(album_id))
+		#user_photos = getUsersPhotos(flask_login.current_user.id)
+		return render_template('hello.html', name=flask_login.current_user.id, message="Album Deleted",base64=base64)
+
+
+def getAlbumid(uid):
+	cursor = conn.cursor()
+	cursor.execute("SELECT A.albums_id, A.name FROM Albums as A WHERE A.user_id = '{0}'".format(uid))
+	return cursor.fetchall()
+
+
+
+
 
 
 @app.route('/search', methods=['GET', 'POST'])
@@ -300,10 +338,9 @@ def addtag():
 		print("yes")
 		cursor.execute("""
 		INSERT INTO tags (name)
-		VALUES ('{0}');
+		VALUES ('{0}')
 		""".format(tag))
 		conn.commit()
-		print(cursor.fetchall())
 	cursor.execute("""
 	SELECT 
 		tag_id
@@ -312,10 +349,11 @@ def addtag():
 	WHERE
 		name = '{0}';
 	""".format(tag))
+	conn.commit()
 	tag_id=cursor.fetchall()[0][0]
 	print("tag_id ",tag_id)
 	cursor.execute("""
-	insert into tagged VALUES ({0},{1});
+	insert into tagged VALUES ({0},{1})
 	""".format(photo,tag_id))	
 	conn.commit()
 	print(cursor.fetchall())

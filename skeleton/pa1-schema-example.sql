@@ -1,4 +1,5 @@
-CREATE DATABASE IF NOT EXISTS photoshare;
+drop DATABASE IF EXISTS photoshare;
+create database photoshare;
 USE photoshare;
 
 CREATE TABLE Users(
@@ -21,33 +22,37 @@ CREATE TABLE Users(
  REFERENCES Users(user_id),
  FOREIGN KEY (user_id2)
  REFERENCES Users(user_id)
+ ON DELETE CASCADE
 );
 
 CREATE TABLE Albums(
- albums_id INTEGER,
+ albums_id INTEGER AUTO_INCREMENT,
  name VARCHAR(100),
  date DATE,
  user_id INTEGER NOT NULL,
  PRIMARY KEY (albums_id),
  FOREIGN KEY (user_id)
  REFERENCES Users(user_id)
+ ON DELETE CASCADE
 );
 
 CREATE TABLE Tags(
- tag_id INTEGER,
+ tag_id INTEGER AUTO_INCREMENT,
  name VARCHAR(100),
  PRIMARY KEY (tag_id)
 );
 
 CREATE TABLE Photos(
- photo_id INTEGER,
+ photo_id INTEGER AUTO_INCREMENT,
  caption VARCHAR(100),
  data LONGBLOB,
  albums_id INTEGER NOT NULL,
  user_id INTEGER NOT NULL,
  PRIMARY KEY (photo_id),
- FOREIGN KEY (albums_id) REFERENCES Albums (albums_id),
- FOREIGN KEY (user_id) REFERENCES Users (user_id)
+ CONSTRAINT album_fk
+    FOREIGN KEY (albums_id) REFERENCES Albums (albums_id) ON DELETE CASCADE,
+ CONSTRAINT user_fk
+    FOREIGN KEY (user_id) REFERENCES Users (user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE Tagged(
@@ -58,10 +63,11 @@ CREATE TABLE Tagged(
  REFERENCES Photos (photo_id),
  FOREIGN KEY(tag_id)
  REFERENCES Tags (tag_id)
+ ON DELETE CASCADE
 );
 
 CREATE TABLE Comments(
- comment_id INTEGER,
+ comment_id INTEGER AUTO_INCREMENT,
  user_id INTEGER NOT NULL,
  photo_id INTEGER NOT NULL,
  text VARCHAR (100),
@@ -71,6 +77,7 @@ CREATE TABLE Comments(
  REFERENCES Users (user_id),
  FOREIGN KEY (photo_id)
  REFERENCES Photos (photo_id)
+ ON DELETE CASCADE
 );
 
 CREATE TABLE Likes(
@@ -81,6 +88,7 @@ CREATE TABLE Likes(
  REFERENCES Photos (photo_id),
  FOREIGN KEY (user_id)
  REFERENCES Users (user_id)
+ ON DELETE CASCADE
 );
 
 INSERT INTO users(user_id,email,first_name,last_name,password) VALUES (1,'testing@gmail.com','John','Smith','password');
