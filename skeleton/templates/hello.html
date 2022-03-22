@@ -16,9 +16,18 @@
 <body>
   {% if message %}
   <h4>{{message}}!</h4>
-  {% endif %}
-  <title>Photoshare</title>
-  {% if name %}
+
+{% endif %}
+{% if topUsers %}
+  <h4>Top Users!</h4>
+  {%for topuser in topUsers%}
+    <li>{{topuser[0]}} {{topuser[1]}} {{topuser[2]}}</li>
+  {%endfor%}
+{% endif %}
+
+
+<title>Photoshare</title>
+{% if name %}
   <h1>Hello {{ name }}!</h1>
   {% endif %}
 
@@ -37,6 +46,7 @@
   <h2>Here are all the photos</h2>
   <ul>
     {% for photo in photos %}
+
 
     <li>{{photo[2]}}
       {% if name %}
@@ -72,6 +82,32 @@
       {% endif %}
       <br>
       <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}' />
+      <form method="post" enctype="multipart/form-data" action="/like"> 
+                <input type="hidden" name="photo_id" value={{photo[1]}}>
+                <input type="submit" value="Like"> 
+        </form>
+        <br>
+        {%if photoLikes %}
+          {{photoLikes[loop.index0][0]}} Likes  by 
+
+          {%for like in photoLikes[loop.index0][1] %}
+            {{like[0]}} {{like[1]}}, 
+          {%endfor%}
+        {%endif%}
+
+        {% if comments %}
+          {% for comment in comments[loop.index0]%}
+            <li>{{comment[0]}} by {{comment[4]}} {{comment[5]}}</li>
+          {%endfor%}
+        {% endif %}
+
+        </li>
+
+        <form method="post" enctype="multipart/form-data" action="/leaveComment"> 
+                <input type="text" name="comment_text" required='true'>
+                <input type="hidden" name="photo_id" value={{photo[1]}}>
+                <input type="submit" value="Add"> 
+        </form>
     </li>
     {% endfor %}
   </ul>
