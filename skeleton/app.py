@@ -238,20 +238,21 @@ def upload_file():
 @app.route('/search', methods=['GET', 'POST'])
 @flask_login.login_required
 def search():
-    if request.method == "POST":
-        friendvar = request.form['friend_ser']
-        friendvar = friendvar.split(" ")
-        
-        cursor.execute("SELECT U.first_name, U.last_name, U.user_id FROM Users as U WHERE U.first_name LIKE %s OR U.last_name LIKE %s", (friendvar[0], friendvar[0]))
-        data = cursor.fetchall()
-        if(len(friendvar) > 1):
-        	cursor.execute("SELECT U.first_name, U.last_name, U.user_id FROM Users as U WHERE U.last_name LIKE %s", friendvar[1])
-        	data = data + cursor.fetchall()
-        	print(data)
+	uid = getUserIdFromEmail(flask_login.current_user.id)
+	if request.method == "POST":
+		friendvar = request.form['friend_ser']
+		friendvar = friendvar.split(" ")
 
-        conn.commit()
-        return render_template('search.html', findFriendData = data)
-    return render_template('search.html')
+		cursor.execute("SELECT U.first_name, U.last_name, U.user_id FROM Users as U WHERE U.first_name LIKE %s OR U.last_name LIKE %s", (friendvar[0], friendvar[0]))
+		data = cursor.fetchall()
+		if(len(friendvar) > 1):
+			cursor.execute("SELECT U.first_name, U.last_name, U.user_id FROM Users as U WHERE U.last_name LIKE %s", friendvar[1])
+			data = data + cursor.fetchall()
+			print(data)
+
+		conn.commit()
+		return render_template('search.html', findFriendData = data)
+	return render_template('search.html', recommendFriends = recommendFriends(uid))
 
 @app.route('/friend', methods=['POST'])
 @flask_login.login_required
@@ -470,18 +471,12 @@ def searchComment():
 def addLike():
 	if request.method == 'POST':
 		pid = request.form.get('photo_id')
-		#print(pid)
 		pid = int(pid)
-		#text = request.form.get('comment_text')
-		#date = datetime.date.today()
 		uid = getUserIdFromEmail(flask_login.current_user.id)
-		#cid = getUserIdFromComment(pid)
-		#photo_user = getUserIdFromPhoto(pid)
 
 		if cursor.execute("SELECT user_id FROM Likes L WHERE user_id = '{0}' AND photo_id = '{1}'".format(uid, pid)):
 			return flask.redirect(flask.url_for('hello'))
-		#print('LIKES(cid, uid, pid): ')
-		#print(cid, uid, pid)
+
 		cursor.execute("INSERT INTO Likes (photo_id, user_id) VALUES ('{0}', '{1}')".format(pid, uid))
 		conn.commit()
 		return flask.redirect(flask.url_for('hello'))
@@ -518,6 +513,14 @@ def topUsers():
 	#print(cursor.fetchall())
 	data = cursor.fetchall()
 
+	return data
+
+#Recommended Friends
+def recommendFriends(uid):
+	cursor = conn.cursor()
+	cursor.execute("SELECT U.first_name, U.last_name, F.user_id2, COUNT(*) FROM Friends F, Users U WHERE F.user_id1 IN (SELECT Fl.user_id2 FROM Friends Fl WHERE Fl.user_id1 = '{0}' and Fl.user_id2 <> '{0}') and F.user_id2 <> '{0}' and F.user_id2 = U.user_id GROUP BY F.user_id2 ORDER BY COUNT(*) DESC".format(uid))
+	data = cursor.fetchall()
+	print(uid)
 	return data
 
 

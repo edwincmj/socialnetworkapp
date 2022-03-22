@@ -1,5 +1,16 @@
 <!doctype html>
 <body>
+<h4>Recommended friends</h4>
+{% for item in recommendFriends %}
+    <tr>
+        <td> {{item[0]}} {{item[1]}} </td> 
+        </br>
+    </tr>
+{% endfor %}
+
+
+    
+<br>
 <h4>Search friends</h4>
 <form method="post" enctype="multipart/form-data" action="/search">
     <label for="friend">Search friend:</label>
