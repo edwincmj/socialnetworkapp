@@ -96,7 +96,10 @@
       {% endif %}
 
       {% if name %}
-      <button type="button" onclick=" {{ url_for('deletePhoto', photoid=photo[1] ) }} ">Delete Photo</button>
+      <form method="post" enctype="multipart/form-data" action="/deletePhoto"> 
+        <input type="hidden" name="photo_id" value="{{photo[1]}}">
+        <input type="submit" value="Delete photo">
+      </form>
 
       <!-- Button trigger modal -->
       <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal{{photo[1]}}">
