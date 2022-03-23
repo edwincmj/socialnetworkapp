@@ -373,15 +373,15 @@ def addtag():
 	print(cursor.fetchall())
 	return render_template('hello.html')
 
-@app.route('/getUserPhotosByTagName')
+@app.route('/getUserPhotosByTagName',methods=['POST'])
 @flask_login.login_required
 def getUserPhotosByTagName():
-	tagname = request.args.get('tagname')
+	tagname = request.form.get('tagname')
 	email = flask_login.current_user.id
 	cursor = conn.cursor()
 	cursor.execute("""
 	SELECT 
-		*
+		p.data,p.caption
 	FROM
 		photos p,
 		tagged tg,
@@ -397,7 +397,7 @@ def getUserPhotosByTagName():
 			WHERE
 				email = '{1}')
 	""".format(tagname,email))	
-	return cursor.fetchall()
+	return render_template('hello.html', message='Photos with '+tagname, taguserphotos=cursor.fetchall(), base64=base64)
 
 @app.route('/getPhotosByTagName', methods=['POST'])
 @flask_login.login_required
@@ -442,7 +442,7 @@ def photoSearch():
 	query+=');'
 	print(query)
 	cursor.execute(query)
-	return cursor.fetchall()
+	return render_template('hello.html', message='Photos with '+tags, photosearch=cursor.fetchall(), base64=base64)
 
 
 #Comments

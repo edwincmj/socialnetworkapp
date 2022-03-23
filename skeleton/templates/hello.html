@@ -68,12 +68,16 @@
         {% for tag in tags %}
           {% if tag[2] == photo[1] %}
           <li>
-            {{tag[2]}}
-            {{photo[1]}}
             <form method="post" enctype="multipart/form-data" action="/getPhotosByTagName"> 
               <input type="hidden" name="tagname" value="{{tag[1]}}">
               <input type="submit" value="{{tag[1]}}">
             </form>
+            {% if name %}
+              <form method="post" enctype="multipart/form-data" action="/getUserPhotosByTagName"> 
+                <input type="hidden" name="tagname" value="{{tag[1]}}">
+                <input type="submit" value="See only my photos with tagname:{{tag[1]}}">
+              </form>
+            {% endif %}
           </li>
           {% endif %}
         {%endfor%}
@@ -148,6 +152,14 @@
 
   {% if tagphotos %}
     {% for tagphoto in tagphotos %}
+      <li>{{tagphoto[1]}}
+        <img src='data:image/jpg;base64, {{ base64.b64encode(tagphoto[0]).decode("ascii") }}' />
+      </li>
+    {%endfor%}
+  {% endif %}
+
+  {% if taguserphotos %}
+    {% for tagphoto in taguserphotos %}
       <li>{{tagphoto[1]}}
         <img src='data:image/jpg;base64, {{ base64.b64encode(tagphoto[0]).decode("ascii") }}' />
       </li>
