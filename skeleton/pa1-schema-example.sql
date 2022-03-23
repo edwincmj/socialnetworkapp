@@ -89,11 +89,9 @@ CREATE TABLE Likes(
  PRIMARY KEY (photo_id,user_id),
  CONSTRAINT likes_photo_fk
     FOREIGN KEY (photo_id)
-    REFERENCES Photos (photo_id),
+    REFERENCES Photos (photo_id) ON DELETE CASCADE,
 CONSTRAINT likes_user_fk
      FOREIGN KEY (user_id)
      REFERENCES Users (user_id) ON DELETE CASCADE
 );
 
-INSERT INTO users(user_id,email,first_name,last_name,password) VALUES (1,'testing@gmail.com','John','Smith','password');
-INSERT INTO Albums(user_id,albums_id) VALUES (1,1);
