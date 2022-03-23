@@ -43,17 +43,28 @@
   {% endif %}
 
   {% if Albums %}
+  <h5> Here are your Albums<h5>
     {%for Album in Albums%}
-    <tb>
-      {{Album[1]}}
-      <form method="post" enctype="multipart/form-data" action="/deleteAlbum"> 
-                  <input type="hidden" name="albumid" value={{Album[0]}}>
-                  <input type="submit" value="Delete"> 
-      </form>
-
-    </tb>
+      <li>
+        <div>
+          <div style="float: left;width: auto;">
+            <form method="post" enctype="multipart/form-data" action="/getPhotosByAlbum"> 
+                        <input type="hidden" name="albumid" value={{Album[0]}}>
+                        <input type="hidden" name="albumname" value={{Album[1]}}>
+                        <input type="submit" value={{Album[1]}}> 
+            </form> 
+          </div>
+          <div style="float: left;width: auto;">
+            <form method="post" enctype="multipart/form-data" action="/deleteAlbum"> 
+                        <input type="hidden" name="albumid" value={{Album[0]}}>
+                        <input type="submit" value="Delete"> 
+            </form>
+          </div>
+        </div>
     {%endfor%}
   {%endif%}
+  <br>
+  <br>
 
   {% if photos %}
   <h2>Here are all the photos</h2>
@@ -61,7 +72,7 @@
     {% for photo in photos %}
 
 
-    <li>
+    <li> Photo Name: {{photo[2]}}
 
       {% if tags %}
       <ul>
@@ -116,7 +127,7 @@
       </div>
       {% endif %}
       <br>
-      {{photo[1]}}
+
       <img width="50px" height="50px" src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}' />
       <form method="post" enctype="multipart/form-data" action="/like"> 
                 <input type="hidden" name="photo_id" value={{photo[1]}}>
@@ -142,7 +153,7 @@
         <form method="post" enctype="multipart/form-data" action="/leaveComment"> 
                 <input type="text" name="comment_text" required='true'>
                 <input type="hidden" name="photo_id" value={{photo[1]}}>
-                <input type="submit" value="Add"> 
+                <input type="submit" value="Add Comment"> 
         </form>
     </li>
     {% endfor %}

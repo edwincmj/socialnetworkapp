@@ -26,7 +26,7 @@ app.secret_key = 'super secret string'  # Change this!
 
 #These will need to be changed according to your creditionals
 app.config['MYSQL_DATABASE_USER'] = 'root'
-app.config['MYSQL_DATABASE_PASSWORD'] = 'root'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'cs460cs460'
 app.config['MYSQL_DATABASE_DB'] = 'photoshare'
 app.config['MYSQL_DATABASE_HOST'] = 'localhost'
 mysql.init_app(app)
@@ -290,6 +290,26 @@ def getAlbumid(uid):
 	cursor.execute("SELECT A.albums_id, A.name FROM Albums as A WHERE A.user_id = '{0}'".format(uid))
 	return cursor.fetchall()
 
+@app.route('/getPhotosByAlbum', methods=['POST'])
+@flask_login.login_required
+def getPhotosByAlbum():
+	uid = getUserIdFromEmail(flask_login.current_user.id)
+	albumd_id = request.form.get('albumid')
+	albumd_name = request.form.get('albumname')
+	cursor = conn.cursor()
+	print(albumd_name)
+	cursor.execute("""
+	SELECT 
+		p.data,p.caption
+	FROM
+		photos p,
+		albums a
+	WHERE
+		a.albums_id = '{0}' AND a.user_id = '{1}' AND p.albums_id = a.albums_id
+	""".format(albumd_id, uid))	
+	tagphotos = cursor.fetchall()
+	return render_template('hello.html', message='Photos in '+ albumd_name + ' album', tagphotos=tagphotos, base64=base64)
+
 
 
 
@@ -446,10 +466,10 @@ def photoSearch():
 
 #Comments
 @app.route("/leaveComment", methods=['POST', 'GET'])
+@flask_login.login_required
 def leaveComment():
 	if request.method == 'POST':
 		pid = request.form.get('photo_id')
-		#print(pid)
 		pid = int(pid)
 		text = request.form.get('comment_text')
 		date = datetime.date.today()
@@ -460,7 +480,6 @@ def leaveComment():
 		if photo_user is uid:
 			return flask.redirect(flask.url_for('hello'))
 
-		#print(cid, uid, pid, text, date)
 		cursor.execute("INSERT INTO Comments (comment_id, user_id, photo_id,text , date) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}')".format(cid, uid, pid, text, date))
 		conn.commit()
 		return flask.redirect(flask.url_for('hello'))
@@ -490,24 +509,20 @@ def getComment(pid):
 @app.route("/searchComment", methods=['POST', 'GET'])
 def searchComment():
 	if request.method == 'POST':
-		#pid = request.form.get('photo_id')
-		#print(pid)
-		#pid = int(pid)
 		text = request.form.get('comment_text_search')
-		#date = datetime.date.today()
-		#uid = getUserIdFromEmail(flask_login.current_user.id)
-		#cid = genCommentIdFromPhoto(pid)
-		#photo_user = getUserIdFromPhoto(pid)
-
-		#if photo_user is uid:
-		#	return flask.redirect(flask.url_for('hello'))
-
-		print(text)
 		data = []
-		cursor.execute("SELECT C.text, U.first_name, U.last_name, COUNT(C.text) FROM Comments C, Users U WHERE C.user_id = U.user_id and C.text LIKE %s Group By U.user_id ORDER BY COUNT(*) DESC", text)
-		conn.commit()
-		data.append(cursor.fetchall())
-		print(data)
+		if cursor.execute("""SELECT 
+							    C.text, U.first_name, U.last_name, COUNT(C.text)
+							FROM
+							    Comments C,
+							    Users U
+							WHERE
+							    C.user_id = U.user_id
+							        AND C.text LIKE %s
+							GROUP BY U.user_id
+							ORDER BY COUNT(*) DESC""", text):
+			conn.commit()
+			data.append(cursor.fetchall())
 		return render_template('search.html', searchComments = data)
 	return flask.redirect(flask.url_for('search.html'))
 
@@ -515,6 +530,7 @@ def searchComment():
 
 #Likes
 @app.route("/like", methods=['POST', 'GET'])
+@flask_login.login_required
 def addLike():
 	if request.method == 'POST':
 		pid = request.form.get('photo_id')
@@ -536,16 +552,10 @@ def getLikes(pid):
 		data = []
 		cursor.execute("SELECT COUNT(L.user_id) FROM Likes L WHERE L.photo_id = '{0}'".format(ind_pid))
 		data.append(cursor.fetchall()[0][0])
-		#print(data)
-
 		cursor.execute("SELECT U.first_name, U.last_name FROM Likes L inner join Users U on L.user_id = U.user_id WHERE L.photo_id = '{0}'".format(ind_pid))
-		
 		data_names = [item for item in cursor.fetchall()]
-		#print(data_test)
 		data.append(data_names)
-		#print(data)
 		C.append(data)
-	#print(C)
 	return C
 
 def getUserIdFromComment(cid):
@@ -556,8 +566,30 @@ def getUserIdFromComment(cid):
 #Popular users
 def topUsers():
 	cursor = conn.cursor()
-	cursor.execute("SELECT NU.first_name, NU.last_name , SUM(T.num_photos) FROM Users NU , (SELECT U.user_id, COUNT(P.photo_id) AS num_photos FROM Users U, Photos P WHERE P.user_id = U.user_id GROUP BY U.user_id UNION (SELECT U.user_id, COUNT(C.comment_id) AS num_photos FROM Users U, Comments C WHERE C.user_id = U.user_id GROUP BY U.user_id)) AS T WHERE T.user_id = NU.user_id GROUP BY T.user_id ORDER BY SUM(T.num_photos) DESC LIMIT 10")
-	#print(cursor.fetchall())
+	cursor.execute("""SELECT 
+					    NU.first_name, NU.last_name, SUM(T.num_photos)
+					FROM
+					    Users NU,
+					    (SELECT 
+					        U.user_id, COUNT(P.photo_id) AS num_photos
+					    FROM
+					        Users U, Photos P
+					    WHERE
+					        P.user_id = U.user_id
+					    GROUP BY U.user_id 
+					    UNION 
+					    (SELECT 
+					        U.user_id, COUNT(C.comment_id) AS num_photos
+					    FROM
+					        Users U, Comments C
+					    WHERE
+					        C.user_id = U.user_id
+					    GROUP BY U.user_id)) AS T
+					WHERE
+					    T.user_id = NU.user_id
+					GROUP BY T.user_id
+					ORDER BY SUM(T.num_photos) DESC
+					LIMIT 10""")
 	data = cursor.fetchall()
 
 	return data
@@ -565,7 +597,23 @@ def topUsers():
 #Recommended Friends
 def recommendFriends(uid):
 	cursor = conn.cursor()
-	cursor.execute("SELECT U.first_name, U.last_name, F.user_id2, COUNT(*) FROM Friends F, Users U WHERE F.user_id1 IN (SELECT Fl.user_id2 FROM Friends Fl WHERE Fl.user_id1 = '{0}' and Fl.user_id2 <> '{0}') and F.user_id2 <> '{0}' and F.user_id2 = U.user_id GROUP BY F.user_id2 ORDER BY COUNT(*) DESC".format(uid))
+	cursor.execute("""SELECT 
+					    U.first_name, U.last_name, F.user_id2, COUNT(*)
+					FROM
+					    Friends F,
+					    Users U
+					WHERE
+					    F.user_id1 IN (SELECT 
+					            Fl.user_id2
+					        FROM
+					            Friends Fl
+					        WHERE
+					            Fl.user_id1 = '{0}'
+					                AND Fl.user_id2 <> '{0}')
+					        AND F.user_id2 <> '{0}'
+					        AND F.user_id2 = U.user_id
+					GROUP BY F.user_id2
+					ORDER BY COUNT(*) DESC""".format(uid))
 	data = cursor.fetchall()
 	print(uid)
 	return data
