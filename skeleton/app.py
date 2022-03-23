@@ -421,13 +421,12 @@ def getPhotosByTagName():
 
 
 @app.route('/photosearch', methods=['POST'])
-@flask_login.login_required
 def photoSearch():
 	cursor = conn.cursor()
 	tags = request.form.get('tags').split(' ')
 	query = """
 	SELECT 
-    	p.photo_id, p.caption, p.data
+    	p.data,p.caption
 	FROM
 		photos p,
 		tagged tg,
@@ -442,7 +441,7 @@ def photoSearch():
 	query+=');'
 	print(query)
 	cursor.execute(query)
-	return render_template('hello.html', message='Photos with '+tags, photosearch=cursor.fetchall(), base64=base64)
+	return render_template('hello.html',  photosearch=cursor.fetchall(), base64=base64)
 
 
 #Comments

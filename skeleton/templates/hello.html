@@ -180,6 +180,23 @@
     </ol>
   {% endif %}
 
+  <br>
+  <h3>Photo Search</h3>
+  <form method="post" enctype="multipart/form-data" action="/photosearch"> 
+    <input type="text" name="tags" placeholder="Search..">
+    <input type="submit" value="search">
+  </form>
+
+  {% if photosearch %}
+  <h3>Photosearch results</h3>
+    {% for tagphoto in photosearch %}
+      <li>{{tagphoto[1]}}
+        <img src='data:image/jpg;base64, {{ base64.b64encode(tagphoto[0]).decode("ascii") }}' />
+      </li>
+    {%endfor%}
+  {% endif %}
+  
+
   {% if message is none %}
   <p>You should <a href='/login'>login!</a></p>
   {% else %}
